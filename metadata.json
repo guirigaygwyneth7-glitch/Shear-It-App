@@ -1,0 +1,8 @@
+{
+  "name": "Shear It — Engineering Notes Marketplace",
+  "description": "Peer-to-peer academic notes marketplace and community exclusively for engineering students in the Philippines.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

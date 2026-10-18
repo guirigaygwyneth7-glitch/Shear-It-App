@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Catch-All Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Security Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        (request.auth.token.email != null && request.auth.token.email == 'guirigay.gwyneth7@gmail.com') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // 3. Validation Helpers
+    function isValidUser(data) {
+      return (data.uid is string || data.id is string) &&
+             data.email is string && data.email.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidNote(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 256 &&
+             data.price is number && data.price >= 0 &&
+             data.fileUrl is string && data.fileUrl.size() <= 1024 &&
+             data.sellerId is string && data.sellerId.size() <= 128 &&
+             data.approvedStatus is bool &&
+             data.authorizedBuyers is list;
+    }
+
+    // 4. User Profiles & PayMongo Credentials
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn() && isValidId(userId) &&
+                       userId == request.auth.uid &&
+                       isValidUser(incoming()) &&
+                       (incoming().role == 'user' || (request.auth.token.email == 'guirigay.gwyneth7@gmail.com' && incoming().role == 'admin'));
+
+      allow update: if isSignedIn() && isValidId(userId) &&
+                       (userId == request.auth.uid || isAdmin()) &&
+                       isValidUser(incoming()) &&
+                       (incoming().role == existing().role || isAdmin());
+
+      allow delete: if isAdmin();
+    }
+
+    // 5. Notes Marketplace (Real-Time Feed & PayMongo Authorized Buyers)
+    match /notes/{noteId} {
+      allow get, list: if true;
+
+      allow create: if isSignedIn() && isValidId(noteId) &&
+                       isValidNote(incoming()) &&
+                       incoming().sellerId == request.auth.uid &&
+                       (incoming().approvedStatus == false || isAdmin()) &&
+                       incoming().authorizedBuyers.size() == 0;
+
+      allow update: if isValidId(noteId) && isValidNote(incoming()) && (
+        isAdmin() ||
+        (isSignedIn() && existing().sellerId == request.auth.uid && incoming().sellerId == existing().sellerId && incoming().authorizedBuyers == existing().authorizedBuyers) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['authorizedBuyers', 'updatedAt']) && incoming().authorizedBuyers.hasAll(existing().authorizedBuyers))
+      );
+
+      allow delete: if isSignedIn() && isValidId(noteId) &&
+                       (isAdmin() || existing().sellerId == request.auth.uid);
+    }
+
+    // 6. Note Requests & Fulfillments
+    match /requests/{requestId} {
+      allow get, list: if isSignedIn();
+
+      allow create: if isSignedIn() && isValidId(requestId) &&
+                       incoming().requesterId == request.auth.uid;
+
+      allow update: if isSignedIn() && isValidId(requestId) && (
+        isAdmin() ||
+        existing().requesterId == request.auth.uid ||
+        incoming().diff(existing()).affectedKeys().hasAny(['upvotes', 'downvotes', 'netScore', 'recommendedNotes', 'recommendedNoteIds', 'commentsCount', 'status', 'updatedAt'])
+      );
+
+      allow delete: if isSignedIn() && isValidId(requestId) &&
+                       (isAdmin() || existing().requesterId == request.auth.uid);
+
+      match /comments/{commentId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn() && isValidId(commentId) && incoming().userId == request.auth.uid;
+        allow update: if isSignedIn() && isValidId(commentId) && (isAdmin() || existing().userId == request.auth.uid);
+        allow delete: if isSignedIn() && isValidId(commentId) && (isAdmin() || existing().userId == request.auth.uid);
+      }
+    }
+
+    // 7. Admin Mapping
+    match /admins/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

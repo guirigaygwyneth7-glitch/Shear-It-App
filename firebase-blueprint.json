@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with PayMongo payout account credentials",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "paymongoAccountId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "name", "role"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Engineering study note material in the marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "price": { "type": "number" },
+        "fileUrl": { "type": "string", "maxLength": 1024 },
+        "sellerId": { "type": "string", "maxLength": 128 },
+        "approvedStatus": { "type": "boolean" },
+        "authorizedBuyers": { "type": "array" },
+        "sellerName": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "price", "fileUrl", "sellerId", "approvedStatus", "authorizedBuyers"]
+    },
+    "NoteRequest": {
+      "title": "NoteRequest",
+      "description": "Student request for engineering study material not yet in the marketplace",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 256 },
+        "program": { "type": "string", "maxLength": 128 },
+        "yearLevel": { "type": "string", "maxLength": 64 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "topic": { "type": "string", "maxLength": 256 },
+        "materialType": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 4000 },
+        "preferredFormat": { "type": "string", "maxLength": 32 },
+        "budgetPhp": { "type": "number" },
+        "deadline": { "type": "string", "maxLength": 64 },
+        "requesterId": { "type": "string", "maxLength": 128 },
+        "requesterName": { "type": "string", "maxLength": 128 },
+        "requesterUniversity": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["open", "fulfilled", "closed"] },
+        "upvotes": { "type": "number" },
+        "downvotes": { "type": "number" },
+        "netScore": { "type": "number" },
+        "recommendedNoteIds": { "type": "array" },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "title", "program", "subject", "requesterId", "status"]
+    },
+    "RequestComment": {
+      "title": "RequestComment",
+      "description": "Discussion, recommendation or fulfillment reply on a note request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "requestId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 128 },
+        "userRole": { "type": "string", "maxLength": 64 },
+        "content": { "type": "string", "maxLength": 2000 },
+        "recommendedNote": { "type": "object" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "requestId", "userId", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "entities/User" },
+      "description": "User accounts and PayMongo payout credentials"
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "entities/Note" },
+      "description": "Notes collection with approvedStatus and authorizedBuyers"
+    },
+    "/requests/{requestId}": {
+      "schema": { "$ref": "entities/NoteRequest" },
+      "description": "Community requests for engineering study materials"
+    },
+    "/requests/{requestId}/comments/{commentId}": {
+      "schema": { "$ref": "entities/RequestComment" },
+      "description": "Replies, community advice, and recommended notes on requests"
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "entities/User" },
+      "description": "Admin authorization mapping"
+    }
+  }
+}
