@@ -126,16 +126,14 @@ export const ExploreMarketplace: React.FC<ExploreMarketplaceProps> = ({
     seedInitialNotesIfEmpty();
     const unsubscribe = subscribeToMarketplaceNotes(
       (streamed) => {
-        if (streamed.length > 0) {
-          setRealtimeNotes(streamed);
-        }
+        setRealtimeNotes(streamed || []);
       },
       (err) => console.warn('Marketplace feed listener notice:', err)
     );
     return () => unsubscribe();
   }, []);
 
-  const activeNotes = realtimeNotes && realtimeNotes.length > 0 ? realtimeNotes : initialNotes;
+  const activeNotes = realtimeNotes !== null ? realtimeNotes : (initialNotes || []);
 
   // Filter notes - strictly ensure approvedStatus == true
   const filteredNotes = activeNotes.filter((note) => {

@@ -104,9 +104,7 @@ export default function App() {
     // 2. Real-time marketplace feed via Firestore onSnapshot() for notes where approvedStatus == true
     const unsubscribeMarketplace = subscribeToMarketplaceNotes(
       (liveNotes) => {
-        if (liveNotes && liveNotes.length > 0) {
-          setNotes(liveNotes);
-        }
+        setNotes(liveNotes || []);
       },
       (err) => console.warn('Marketplace feed onSnapshot error:', err)
     );

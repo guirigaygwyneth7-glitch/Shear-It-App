@@ -758,25 +758,37 @@ export const NoteRequestsPage: React.FC<NoteRequestsPageProps> = ({
 
                         {/* Recommended Note Attachment Card */}
                         {cm.recommendedNote && (
-                          <div className="p-2 bg-white rounded-lg border border-emerald-300 flex items-center justify-between gap-2 shadow-2xs mt-1">
+                          <div className="p-2.5 bg-white rounded-xl border border-emerald-300 flex items-center justify-between gap-2 shadow-2xs mt-1">
                             <div className="truncate">
-                              <span className="font-bold text-emerald-900 block truncate text-[11px]">
+                              <span className="font-bold text-emerald-950 block truncate text-[11px]">
                                 {cm.recommendedNote.noteTitle}
                               </span>
                               <span className="text-[10px] text-[#746B70] font-mono">
                                 Price: {formatPhp(cm.recommendedNote.pricePhp)}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const found = approvedNotes.find((n) => n.id === cm.recommendedNote?.noteId);
-                                if (found) onOpenViewer(found);
-                              }}
-                              className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shrink-0"
-                            >
-                              Inspect Note
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const found = approvedNotes.find((n) => n.id === cm.recommendedNote?.noteId);
+                                  if (found) onOpenViewer(found);
+                                }}
+                                className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                              >
+                                Inspect
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const found = approvedNotes.find((n) => n.id === cm.recommendedNote?.noteId);
+                                  if (found) onBuyNote(found);
+                                }}
+                                className="px-2.5 py-1 bg-[#800000] hover:bg-[#6B1E35] text-white rounded-lg text-[10px] font-bold cursor-pointer shadow-2xs"
+                              >
+                                Purchase
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>

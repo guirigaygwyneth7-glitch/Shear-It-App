@@ -187,33 +187,73 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             {/* Right Column: Hero High-Fidelity Studio Image with interactive badge */}
             <div className="lg:col-span-5 relative">
-              <div className="relative rounded-2xl overflow-hidden border border-[#E8A5A9] shadow-xl bg-slate-900 aspect-[4/3] sm:aspect-[4/3] group cursor-pointer"
-                onClick={() => popularNotes[0] && onSelectNote(popularNotes[0])}
-              >
-                <img
-                  src="/src/assets/images/hero_engineering_notes_1792130895707.jpg"
-                  alt="Student engineering calculations and handwritten notes"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#570018]/95 via-[#570018]/30 to-transparent flex flex-col justify-end p-6 text-white">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-white/20 backdrop-blur-xs text-[#FAF6F0] font-bold">
-                      Peer Inspected Student Study Guide
-                    </span>
-                    <span className="text-xs font-mono font-bold bg-[#800000] text-white px-2 py-0.5 rounded-md">
-                      ₱75.00
-                    </span>
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold text-white leading-snug group-hover:text-[#FAF6F0] transition-colors">
-                    Structural Analysis & Shear-Moment Reviewer
-                  </h3>
-                  <div className="flex items-center justify-between mt-1 text-xs text-[#E5D6DA]">
-                    <span>UP Diliman · 28 Pages · Solved Problems</span>
-                    <span className="text-[#FAF6F0] font-semibold underline underline-offset-2">Click to Inspect →</span>
+              {popularNotes.length > 0 ? (
+                <div
+                  className="relative rounded-2xl overflow-hidden border border-[#E8A5A9] shadow-xl bg-slate-900 aspect-[4/3] sm:aspect-[4/3] group cursor-pointer"
+                  onClick={() => onSelectNote(popularNotes[0])}
+                >
+                  <img
+                    src={popularNotes[0].previewImages?.[0] || '/src/assets/images/hero_engineering_notes_1792130895707.jpg'}
+                    alt={popularNotes[0].title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#570018]/95 via-[#570018]/30 to-transparent flex flex-col justify-end p-6 text-white">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-white/20 backdrop-blur-xs text-[#FAF6F0] font-bold">
+                        Peer Inspected Study Guide
+                      </span>
+                      <span className="text-xs font-mono font-bold bg-[#800000] text-white px-2 py-0.5 rounded-md">
+                        {popularNotes[0].pricePhp === 0 ? 'FREE' : formatPhp(popularNotes[0].pricePhp)}
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white leading-snug group-hover:text-[#FAF6F0] transition-colors">
+                      {popularNotes[0].title}
+                    </h3>
+                    <div className="flex items-center justify-between mt-1 text-xs text-[#E5D6DA]">
+                      <span>{popularNotes[0].sellerUniversity || 'Engineering'} · {popularNotes[0].pageCount || 20} Pages</span>
+                      <span className="text-[#FAF6F0] font-semibold underline underline-offset-2">Click to Inspect →</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="relative rounded-2xl overflow-hidden border border-[#E8A5A9] shadow-xl bg-slate-900 aspect-[4/3] sm:aspect-[4/3] group">
+                  <img
+                    src="/src/assets/images/hero_engineering_notes_1792130895707.jpg"
+                    alt="Student engineering calculations and handwritten notes"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 opacity-60"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#570018]/95 via-[#570018]/50 to-transparent flex flex-col justify-end p-6 text-white space-y-2">
+                    <div className="inline-flex items-center gap-1.5 text-[10px] uppercase font-mono tracking-wider px-2.5 py-0.5 rounded bg-white/20 backdrop-blur-xs text-[#FAF6F0] font-bold self-start">
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>Ready for Student Creators</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+                      Start the Academic Archive
+                    </h3>
+                    <p className="text-xs text-[#E5D6DA] leading-relaxed line-clamp-2">
+                      No materials uploaded yet. Be the first engineering creator to share verified reviewers, formula sheets, or solved problems!
+                    </p>
+                    <div className="pt-1 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={onStartSelling}
+                        className="px-3 py-1.5 bg-[#800000] hover:bg-[#6B1E35] text-white text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer active:scale-95"
+                      >
+                        Upload Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onExplore()}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                      >
+                        Explore Marketplace
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -346,100 +386,130 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {popularNotes.map((note) => (
-            <div
-              key={note.id}
-              className="bg-white rounded-2xl border border-[#F8EDEF] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
-            >
-              <div>
-                {/* Image preview with Material Type & Price */}
-                <div
-                  onClick={() => onSelectNote(note)}
-                  className="relative aspect-[16/10] bg-slate-100 overflow-hidden cursor-pointer"
-                >
-                  <img
-                    src={note.previewImages?.[0] || '/src/assets/images/note_preview_structures_1792130896313.jpg'}
-                    alt={note.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2.5 right-2.5 bg-[#570018]/95 text-[#FAF6F0] px-2 py-0.5 rounded-md text-xs font-mono font-bold shadow-md">
-                    {note.pricePhp === 0 ? 'FREE' : formatPhp(note.pricePhp)}
-                  </div>
-                  <div className="absolute top-2.5 left-2.5 bg-[#800000] text-white px-2 py-0.5 rounded text-[10px] font-bold">
-                    {note.materialType}
-                  </div>
-                  <div className="absolute bottom-2 left-2.5 text-[10px] font-mono text-white/95 bg-[#570018]/80 px-1.5 py-0.5 rounded">
-                    {note.pageCount || 10} Pages · {note.format || 'PDF'}
-                  </div>
-                </div>
-
-                {/* Content info */}
-                <div className="p-4 space-y-2">
-                  <div className="text-[11px] text-[#746B70] font-mono flex items-center gap-1.5">
-                    <span className="font-bold text-[#800000]">{note.subject || note.courseCode}</span>
-                    <span>·</span>
-                    <span>{(note.program || 'Civil').replace(' Engineering', '')}</span>
-                    <span>·</span>
-                    <span>{note.yearLevel || '3rd Year'}</span>
-                  </div>
-
-                  <h3
-                    onClick={() => onSelectNote(note)}
-                    className="text-sm font-bold text-[#292329] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#800000] transition-colors"
-                  >
-                    {note.title}
-                  </h3>
-
-                  <p className="text-xs text-[#746B70] line-clamp-2 leading-relaxed">
-                    {note.description}
-                  </p>
-
-                  <div className="pt-1 text-[11px] text-[#746B70] flex items-center justify-between">
-                    <span>By {note.sellerName}</span>
-                    <span className="truncate max-w-[140px] text-[#746B70]/80">{note.sellerUniversity}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Reddit Vote bar & Action */}
-              <div className="px-4 py-3 bg-[#F8EDEF]/40 border-t border-[#F8EDEF] flex items-center justify-between">
-                <div className="flex items-center gap-1.5 bg-white border border-[#E8A5A9] rounded-lg px-2 py-1 shadow-2xs">
-                  <button
-                    onClick={() => onVote(note.id, 1)}
-                    className="text-[#746B70] hover:text-[#EA580C] hover:bg-orange-50 rounded p-1 transition-colors cursor-pointer"
-                    title="Upvote note"
-                  >
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-xs font-mono font-bold text-[#800000] tabular-nums">
-                    {note.netScore}
-                  </span>
-                  <button
-                    onClick={() => onVote(note.id, -1)}
-                    className="text-[#746B70] hover:text-[#4F46E5] hover:bg-indigo-50 rounded p-1 transition-colors cursor-pointer"
-                    title="Downvote note"
-                  >
-                    <ThumbsDown className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onSelectNote(note)}
-                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 ${
-                    note.pricePhp === 0
-                      ? 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 hover:from-emerald-500 hover:to-teal-700 text-white ring-1 ring-emerald-300/40 hover:shadow-emerald-600/20'
-                      : 'bg-gradient-to-r from-[#800000] via-[#A01A33] to-[#B8233C] hover:from-[#6B1E35] hover:to-[#800000] text-white ring-1 ring-rose-300/30 hover:shadow-[#800000]/25'
-                  }`}
-                >
-                  {note.pricePhp === 0 ? 'Get Free' : 'Inspect'}
-                </button>
-              </div>
+        {popularNotes.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-[#F8EDEF] p-12 text-center space-y-4 shadow-xs">
+            <BookOpen className="w-12 h-12 text-[#E8A5A9] mx-auto" />
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-[#292329]">
+                No study materials uploaded yet
+              </h3>
+              <p className="text-xs text-[#746B70] max-w-md mx-auto leading-relaxed">
+                Be the first to share verified reviewers, formula sheets, or solved problems with engineering students nationwide. Every upload undergoes peer moderation and quality inspection.
+              </p>
             </div>
-          ))}
-        </div>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onStartSelling}
+                className="px-5 py-2.5 bg-gradient-to-r from-[#800000] via-[#A01A33] to-[#C02636] hover:from-[#6B1E35] hover:to-[#A01A33] text-white font-bold text-xs rounded-xl shadow-sm hover:shadow-md hover:shadow-[#800000]/25 transition-all cursor-pointer active:scale-95"
+              >
+                Upload First Note
+              </button>
+              <button
+                type="button"
+                onClick={() => onExplore()}
+                className="px-5 py-2.5 bg-white border border-[#800000] text-[#800000] hover:bg-[#800000] hover:text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Explore Marketplace
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {popularNotes.map((note) => (
+              <div
+                key={note.id}
+                className="bg-white rounded-2xl border border-[#F8EDEF] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  {/* Image preview with Material Type & Price */}
+                  <div
+                    onClick={() => onSelectNote(note)}
+                    className="relative aspect-[16/10] bg-slate-100 overflow-hidden cursor-pointer"
+                  >
+                    <img
+                      src={note.previewImages?.[0] || '/src/assets/images/note_preview_structures_1792130896313.jpg'}
+                      alt={note.title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2.5 right-2.5 bg-[#570018]/95 text-[#FAF6F0] px-2 py-0.5 rounded-md text-xs font-mono font-bold shadow-md">
+                      {note.pricePhp === 0 ? 'FREE' : formatPhp(note.pricePhp)}
+                    </div>
+                    <div className="absolute top-2.5 left-2.5 bg-[#800000] text-white px-2 py-0.5 rounded text-[10px] font-bold">
+                      {note.materialType}
+                    </div>
+                    <div className="absolute bottom-2 left-2.5 text-[10px] font-mono text-white/95 bg-[#570018]/80 px-1.5 py-0.5 rounded">
+                      {note.pageCount || 10} Pages · {note.format || 'PDF'}
+                    </div>
+                  </div>
+
+                  {/* Content info */}
+                  <div className="p-4 space-y-2">
+                    <div className="text-[11px] text-[#746B70] font-mono flex items-center gap-1.5">
+                      <span className="font-bold text-[#800000]">{note.subject || note.courseCode}</span>
+                      <span>·</span>
+                      <span>{(note.program || 'Civil').replace(' Engineering', '')}</span>
+                      <span>·</span>
+                      <span>{note.yearLevel || '3rd Year'}</span>
+                    </div>
+
+                    <h3
+                      onClick={() => onSelectNote(note)}
+                      className="text-sm font-bold text-[#292329] line-clamp-2 leading-snug cursor-pointer group-hover:text-[#800000] transition-colors"
+                    >
+                      {note.title}
+                    </h3>
+
+                    <p className="text-xs text-[#746B70] line-clamp-2 leading-relaxed">
+                      {note.description}
+                    </p>
+
+                    <div className="pt-1 text-[11px] text-[#746B70] flex items-center justify-between">
+                      <span>By {note.sellerName}</span>
+                      <span className="truncate max-w-[140px] text-[#746B70]/80">{note.sellerUniversity}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Reddit Vote bar & Action */}
+                <div className="px-4 py-3 bg-[#F8EDEF]/40 border-t border-[#F8EDEF] flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 bg-white border border-[#E8A5A9] rounded-lg px-2 py-1 shadow-2xs">
+                    <button
+                      onClick={() => onVote(note.id, 1)}
+                      className="text-[#746B70] hover:text-[#EA580C] hover:bg-orange-50 rounded p-1 transition-colors cursor-pointer"
+                      title="Upvote note"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs font-mono font-bold text-[#800000] tabular-nums">
+                      {note.netScore}
+                    </span>
+                    <button
+                      onClick={() => onVote(note.id, -1)}
+                      className="text-[#746B70] hover:text-[#4F46E5] hover:bg-indigo-50 rounded p-1 transition-colors cursor-pointer"
+                      title="Downvote note"
+                    >
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onSelectNote(note)}
+                    className={`px-4 py-2 text-xs font-bold rounded-xl transition-all shadow-xs hover:shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                      note.pricePhp === 0
+                        ? 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 hover:from-emerald-500 hover:to-teal-700 text-white ring-1 ring-emerald-300/40 hover:shadow-emerald-600/20'
+                        : 'bg-gradient-to-r from-[#800000] via-[#A01A33] to-[#B8233C] hover:from-[#6B1E35] hover:to-[#800000] text-white ring-1 ring-rose-300/30 hover:shadow-[#800000]/25'
+                    }`}
+                  >
+                    {note.pricePhp === 0 ? 'Get Free' : 'Inspect'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* HOW SHEAR IT WORKS (DEEP MAROON SECTION) */}

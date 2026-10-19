@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Compass,
   BookOpen,
@@ -15,13 +15,14 @@ import {
   CheckSquare,
   Wallet,
   FileQuestion,
+  LogIn,
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { ShearItLogo } from './ShearItLogo';
 import { signInWithGooglePopup } from '../lib/firebase';
 
 interface NavbarProps {
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   currentView: string;
   onNavigate: (view: string) => void;
   onOpenUpload: () => void;
@@ -44,8 +45,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   allUsers,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const isModOrAdmin = currentUser.role === 'moderator' || currentUser.role === 'admin';
+  const isModOrAdmin = currentUser ? (currentUser.role === 'moderator' || currentUser.role === 'admin') : false;
+  const isAdmin = currentUser ? (currentUser.role === 'admin' || currentUser.email === 'guirigay.gwyneth7@gmail.com') : false;
+
+  // Click outside to dismiss user dropdown menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#F8EDEF] shadow-xs">
@@ -132,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {(currentUser.role === 'admin' || currentUser.email === 'guirigay.gwyneth7@gmail.com') && (
+          {isAdmin && (
             <button
               onClick={() => onNavigate('admin')}
               className={`whitespace-nowrap shrink-0 hover:text-[#570018] transition-colors py-1 flex items-center gap-1.5 font-bold cursor-pointer ${
@@ -155,98 +173,100 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Upload Notes</span>
           </button>
 
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-xl border border-[#E8A5A9]/70 hover:border-[#800000] hover:bg-[#F8EDEF]/50 transition-all cursor-pointer bg-white shadow-2xs hover:shadow-xs"
-              title="Switch demo student account or view profile"
-            >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#800000] to-[#570018] text-white flex items-center justify-center text-xs font-bold font-mono shadow-2xs">
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="hidden lg:flex flex-col text-left">
-                <span className="text-xs font-bold text-[#292329] leading-tight truncate max-w-[110px]">
-                  {currentUser.name.split(' ')[0]}
-                </span>
-                <span className="text-[10px] text-[#746B70] leading-tight truncate max-w-[110px]">
-                  {currentUser.role === 'admin' ? 'Administrator' : 'Student Seller'}
-                </span>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-[#746B70]" />
-            </button>
-
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#F8EDEF] py-2 z-50 text-[#292329]">
-                <div className="px-4 py-2.5 border-b border-[#F8EDEF]">
-                  <p className="text-xs font-bold text-[#292329]">{currentUser.name}</p>
-                  <p className="text-[11px] text-[#746B70] truncate">{currentUser.email}</p>
-                  {currentUser.paymongoAccountId && (
-                    <p className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 truncate">
-                      PayMongo: {currentUser.paymongoAccountId}
-                    </p>
-                  )}
-                  <span className="inline-block mt-1 text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-[#F8EDEF] text-[#800000]">
-                    Role: {currentUser.role}
+          {/* Profile Dropdown or Sign In CTA */}
+          {currentUser ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 p-1.5 rounded-xl border border-[#E8A5A9]/70 hover:border-[#800000] hover:bg-[#F8EDEF]/50 transition-all cursor-pointer bg-white shadow-2xs hover:shadow-xs"
+                title="Account menu and persona switcher"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#800000] to-[#570018] text-white flex items-center justify-center text-xs font-bold font-mono shadow-2xs">
+                  {currentUser.name ? currentUser.name.charAt(0) : 'U'}
+                </div>
+                <div className="hidden lg:flex flex-col text-left">
+                  <span className="text-xs font-bold text-[#292329] leading-tight truncate max-w-[110px]">
+                    {currentUser.name ? currentUser.name.split(' ')[0] : 'User'}
+                  </span>
+                  <span className="text-[10px] text-[#746B70] leading-tight truncate max-w-[110px]">
+                    {currentUser.role === 'admin' ? 'Administrator' : 'Student Seller'}
                   </span>
                 </div>
+                <ChevronDown className="w-3.5 h-3.5 text-[#746B70]" />
+              </button>
 
-                <div className="px-2 py-1.5">
-                  {onOpenProfile && (
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#F8EDEF] py-2 z-50 text-[#292329]">
+                  <div className="px-4 py-2.5 border-b border-[#F8EDEF]">
+                    <p className="text-xs font-bold text-[#292329]">{currentUser.name}</p>
+                    <p className="text-[11px] text-[#746B70] truncate">{currentUser.email}</p>
+                    {currentUser.paymongoAccountId && (
+                      <p className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded mt-1 truncate">
+                        PayMongo: {currentUser.paymongoAccountId}
+                      </p>
+                    )}
+                    <span className="inline-block mt-1 text-[9px] font-mono uppercase font-bold px-1.5 py-0.5 rounded bg-[#F8EDEF] text-[#800000]">
+                      Role: {currentUser.role}
+                    </span>
+                  </div>
+
+                  <div className="px-2 py-1.5">
+                    {onOpenProfile && (
+                      <button
+                        onClick={() => {
+                          onOpenProfile();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2 cursor-pointer"
+                      >
+                        <Wallet className="w-3.5 h-3.5 text-[#800000]" />
+                        PayMongo & Profile Settings
+                      </button>
+                    )}
                     <button
                       onClick={() => {
-                        onOpenProfile();
+                        onNavigate('requests');
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2 cursor-pointer"
                     >
-                      <Wallet className="w-3.5 h-3.5 text-[#800000]" />
-                      PayMongo & Profile Settings
+                      <FileQuestion className="w-3.5 h-3.5 text-[#800000]" />
+                      Request a Note
                     </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      onNavigate('requests');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2"
-                  >
-                    <FileQuestion className="w-3.5 h-3.5 text-[#800000]" />
-                    Request a Note
-                  </button>
-                  <button
-                    onClick={() => {
-                      onNavigate('buyer_library');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2"
-                  >
-                    <BookOpen className="w-3.5 h-3.5 text-[#800000]" />
-                    My Purchased Notes
-                  </button>
-                  <button
-                    onClick={() => {
-                      onNavigate('seller_dashboard');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2"
-                  >
-                    <FolderLock className="w-3.5 h-3.5 text-[#800000]" />
-                    Seller Dashboard & Payouts
-                  </button>
-                  {(currentUser.role === 'admin' || currentUser.email === 'guirigay.gwyneth7@gmail.com') && (
                     <button
                       onClick={() => {
-                        onNavigate('admin');
+                        onNavigate('buyer_library');
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-[#800000] font-bold hover:bg-[#F8EDEF] rounded-lg flex items-center gap-2"
+                      className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2 cursor-pointer"
                     >
-                      <Shield className="w-3.5 h-3.5 text-[#800000]" />
-                      Admin Review Queue (Live)
+                      <BookOpen className="w-3.5 h-3.5 text-[#800000]" />
+                      My Purchased Notes
                     </button>
-                  )}
-                </div>
+                    <button
+                      onClick={() => {
+                        onNavigate('seller_dashboard');
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 text-xs text-[#292329] hover:bg-[#F8EDEF]/70 rounded-lg flex items-center gap-2 cursor-pointer"
+                    >
+                      <FolderLock className="w-3.5 h-3.5 text-[#800000]" />
+                      Seller Dashboard & Payouts
+                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          onNavigate('admin');
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs text-[#800000] font-bold hover:bg-[#F8EDEF] rounded-lg flex items-center gap-2 cursor-pointer"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-[#800000]" />
+                        Admin Review Queue (Live)
+                      </button>
+                    )}
+                  </div>
 
                 {/* Persona Switcher */}
                 <div className="border-t border-[#F8EDEF] px-3 py-2 bg-[#F8EDEF]/40">
@@ -294,7 +314,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         onSignOut();
                         setShowUserMenu(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-rose-700 hover:bg-rose-50 rounded-lg flex items-center gap-2 font-semibold"
+                      className="w-full text-left px-3 py-1.5 text-xs text-rose-700 hover:bg-rose-50 rounded-lg flex items-center gap-2 font-semibold cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5 text-rose-600" />
                       Sign Out (Return to Login)
@@ -304,6 +324,26 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
           </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenAuth}
+              className="px-3.5 py-2 text-xs font-bold text-[#800000] hover:text-[#570018] hover:bg-[#F8EDEF] border border-[#E8A5A9] rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAuth}
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#800000] to-[#A01A33] hover:from-[#6B1E35] hover:to-[#800000] rounded-xl transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>Free Account</span>
+            </button>
+          </div>
+        )}
         </div>
       </div>
 
@@ -328,6 +368,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           Community
         </button>
+        {!currentUser && (
+          <button
+            onClick={onOpenAuth}
+            className="py-1 text-[#800000] font-bold flex items-center gap-1"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </button>
+        )}
         <button
           onClick={() => onNavigate('buyer_library')}
           className={`py-1 ${currentView === 'buyer_library' ? 'text-[#800000] font-bold' : ''}`}

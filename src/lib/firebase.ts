@@ -475,122 +475,41 @@ export async function simulatePayMongoPaymentSuccess(params: {
   return await response.json();
 }
 
-// Seed initial marketplace notes if collection is empty
+/**
+ * Direct client Firestore update for authorized buyers
+ */
+export async function addAuthorizedBuyerInFirestore(
+  noteId: string,
+  buyerUid: string
+): Promise<void> {
+  try {
+    const noteRef = doc(db, 'notes', noteId);
+    await updateDoc(noteRef, {
+      authorizedBuyers: arrayUnion(buyerUid),
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('Direct Firestore buyer update notice:', err);
+  }
+}
+
+// Initial notes seeding disabled: starting with clean marketplace
 export async function seedInitialNotesIfEmpty(): Promise<void> {
+  // Purposely do not seed any notes - marketplace starts empty until users upload real notes
+  return;
+}
+
+export async function clearAllNotesFromFirestore(): Promise<void> {
   try {
     const notesRef = collection(db, 'notes');
-    const snap = await getDocs(query(notesRef, limit(1)));
-    if (!snap.empty) return; // already seeded
-
-    const SEED_NOTES: NoteListing[] = [
-      {
-        id: 'note_fea_001',
-        title: 'Reinforced Concrete Beam & Shear Wall NSCP 2015 Reviewer',
-        description: 'Comprehensive handwritten problem set and derivations for shear stirrup spacing, flexural moment capacities, and NSCP 2015 seismic detailing code equations.',
-        price: 75,
-        pricePhp: 75,
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        sellerId: 'usr_carlo',
-        sellerName: 'Carlo Mendoza',
-        approvedStatus: true,
-        authorizedBuyers: ['usr_gwyneth'],
-        subject: 'Reinforced Concrete Design',
-        program: 'Civil Engineering',
-        materialType: 'Solved Problem Set',
-        pageCount: 32,
-        previewImages: ['/src/assets/images/note_preview_structures_1792130896313.jpg'],
-        viewsCount: 240,
-        purchasesCount: 18,
-        upvotes: 42,
-        downvotes: 1,
-        netScore: 41,
-        status: 'published',
-        createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'note_thermo_002',
-        title: 'Thermodynamics Pure Substance Steam Table Quick Formula Guide',
-        description: 'Instant lookup formulas for quality x, enthalpy h, entropy s, and interpolation shortcuts for Rankine cycle and reheat turbine calculations.',
-        price: 50,
-        pricePhp: 50,
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        sellerId: 'usr_bea',
-        sellerName: 'Bea Nicole Santos',
-        approvedStatus: true,
-        authorizedBuyers: [],
-        subject: 'Thermodynamics 1 & 2',
-        program: 'Mechanical Engineering',
-        materialType: 'Formula Sheet',
-        pageCount: 16,
-        previewImages: ['/src/assets/images/note_preview_calculus_1792130898199.jpg'],
-        viewsCount: 180,
-        purchasesCount: 12,
-        upvotes: 35,
-        downvotes: 0,
-        netScore: 35,
-        status: 'published',
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'note_circuits_003',
-        title: 'BJT & MOSFET Small-Signal Model Transconductance Equations',
-        description: 'Step-by-step small-signal AC equivalence, hybrid-pi model, input impedance Zin, and output impedance Zout derivations for ECE board exam prep.',
-        price: 65,
-        pricePhp: 65,
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        sellerId: 'usr_mark',
-        sellerName: 'Mark Vincent Alcantara',
-        approvedStatus: true,
-        authorizedBuyers: ['usr_carlo'],
-        subject: 'Electronics 1 & Circuit Analysis',
-        program: 'Electronics Engineering',
-        materialType: 'Reviewer',
-        pageCount: 24,
-        previewImages: ['/src/assets/images/note_preview_circuits_1792130897238.jpg'],
-        viewsCount: 145,
-        purchasesCount: 9,
-        upvotes: 28,
-        downvotes: 0,
-        netScore: 28,
-        status: 'published',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'note_geotech_004',
-        title: 'Soil Mechanics Direct Shear & Mohr-Coulomb Triaxial Solved Problems',
-        description: 'Pending Peer Review: 15 full board-style solved problems calculating pore water pressure, effective stress sigma prime, and soil cohesion c.',
-        price: 80,
-        pricePhp: 80,
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-        sellerId: 'usr_carlo',
-        sellerName: 'Carlo Mendoza',
-        approvedStatus: false, // Under admin inspection
-        authorizedBuyers: [],
-        subject: 'Geotechnical Engineering',
-        program: 'Civil Engineering',
-        materialType: 'Practice Exam',
-        pageCount: 28,
-        previewImages: ['/src/assets/images/note_preview_structures_1792130896313.jpg'],
-        viewsCount: 12,
-        purchasesCount: 0,
-        upvotes: 3,
-        downvotes: 0,
-        netScore: 3,
-        status: 'under_quality_inspection',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
-
-    for (const note of SEED_NOTES) {
-      await setDoc(doc(db, 'notes', note.id), note);
+    const snap = await getDocs(notesRef);
+    if (!snap.empty) {
+      const deletes = snap.docs.map((d) => deleteDoc(d.ref));
+      await Promise.all(deletes);
+      console.log(`Cleared ${snap.size} notes from Firestore.`);
     }
-    console.log('Seeded initial marketplace notes in Firestore.');
   } catch (err) {
-    console.warn('Initial notes seeding error:', err);
+    console.warn('Notice clearing notes from Firestore:', err);
   }
 }
 

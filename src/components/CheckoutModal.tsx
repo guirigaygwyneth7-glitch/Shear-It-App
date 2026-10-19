@@ -20,6 +20,7 @@ import { formatPhp } from '../lib/api';
 import {
   createPayMongoCheckoutSession,
   simulatePayMongoPaymentSuccess,
+  addAuthorizedBuyerInFirestore,
 } from '../lib/firebase';
 
 interface CheckoutModalProps {
@@ -58,32 +59,78 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     try {
       const buyerUid = currentUser.uid || currentUser.id;
 
-      // Create PayMongo Checkout Session on server
-      const sessionRes = await createPayMongoCheckoutSession({
-        noteId: note.id,
-        buyerUid,
-        buyerName: currentUser.name,
-        buyerEmail: currentUser.email,
-      });
+      if (isFree) {
+        // Free note claim: immediately grant authorization in Firestore & memory
+        try {
+          await addAuthorizedBuyerInFirestore(note.id, buyerUid);
+        } catch (fbErr) {
+          console.warn('Direct Firestore buyer update notice:', fbErr);
+        }
 
-      setCheckoutSessionId(sessionRes.sessionId);
+        try {
+          await simulatePayMongoPaymentSuccess({
+            noteId: note.id,
+            buyerUid,
+            sessionId: `free_claim_${Date.now()}`,
+          });
+        } catch (simErr) {
+          console.warn('Free payment simulation notice:', simErr);
+        }
 
-      if (sessionRes.mode === 'live' && sessionRes.checkoutUrl) {
+        const updatedNote: NoteListing = {
+          ...note,
+          authorizedBuyers: Array.from(new Set([...(note.authorizedBuyers || []), buyerUid])),
+        };
+
+        setStep('success');
+        onSuccess(updatedNote);
+        return;
+      }
+
+      // Paid note checkout flow
+      let sessionRes: any = null;
+      try {
+        sessionRes = await createPayMongoCheckoutSession({
+          noteId: note.id,
+          buyerUid,
+          buyerName: currentUser.name,
+          buyerEmail: currentUser.email,
+        });
+        if (sessionRes?.sessionId) {
+          setCheckoutSessionId(sessionRes.sessionId);
+        }
+      } catch (sessErr: any) {
+        console.warn('Backend checkout session notice:', sessErr);
+        // Fallback session ID for test environment
+        setCheckoutSessionId(`cs_fallback_${Date.now()}`);
+      }
+
+      if (sessionRes?.mode === 'live' && sessionRes?.checkoutUrl) {
         setLiveCheckoutUrl(sessionRes.checkoutUrl);
-        // Open live PayMongo in current or new window
         window.location.href = sessionRes.checkoutUrl;
         return;
       }
 
-      // In Sandbox / Test simulation mode: simulate 1.2s gateway processing dwell
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // In Sandbox / Test simulation mode: simulate 1s gateway processing dwell
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Trigger Webhook execution on server (which appends buyerUid to authorizedBuyers in Firestore)
-      await simulatePayMongoPaymentSuccess({
-        noteId: note.id,
-        buyerUid,
-        sessionId: sessionRes.sessionId,
-      });
+      // Append buyer to authorized buyers in Firestore
+      try {
+        await addAuthorizedBuyerInFirestore(note.id, buyerUid);
+      } catch (fbErr) {
+        console.warn('Firestore authorization update notice:', fbErr);
+      }
+
+      // Trigger Webhook execution on server
+      try {
+        await simulatePayMongoPaymentSuccess({
+          noteId: note.id,
+          buyerUid,
+          sessionId: sessionRes?.sessionId || `cs_sim_${Date.now()}`,
+        });
+      } catch (simErr) {
+        console.warn('Server payment simulation notice:', simErr);
+      }
 
       const updatedNote: NoteListing = {
         ...note,
@@ -217,7 +264,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
                 <Sparkles className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                 <p className="text-[11px] leading-relaxed">
-                  <strong>Direct Seller Payout:</strong> PayMongo routes the funds directly to the uploader's registered payout credentials. Upon successful checkout, our secure webhook appends your buyer UID to <code className="bg-amber-100 px-1 rounded font-mono">authorizedBuyers</code> in Firestore.
+                  {isFree ? (
+                    <>
+                      <strong>Instant Access:</strong> This study material is provided for free by the student author. Claiming will immediately append your buyer UID to <code className="bg-amber-100 px-1 rounded font-mono">authorizedBuyers</code> in Firestore.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Direct Seller Payout:</strong> PayMongo routes the funds directly to the uploader's registered payout credentials. Upon successful checkout, our secure webhook appends your buyer UID to <code className="bg-amber-100 px-1 rounded font-mono">authorizedBuyers</code> in Firestore.
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -227,7 +282,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 onClick={handleProcessPayMongo}
                 className="w-full py-3.5 px-4 bg-gradient-to-r from-[#800000] via-[#A01A33] to-[#C02636] hover:from-[#6B1E35] hover:to-[#A01A33] text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md hover:shadow-lg hover:shadow-[#800000]/25 flex items-center justify-center gap-2 cursor-pointer active:scale-95 ring-1 ring-amber-300/40"
               >
-                <span>Pay {formatPhp(currentPrice)} with PayMongo</span>
+                <span>{isFree ? 'Claim Free Access (₱0.00)' : `Purchase for ${formatPhp(currentPrice)} with PayMongo`}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </>

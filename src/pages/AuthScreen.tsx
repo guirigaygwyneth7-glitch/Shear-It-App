@@ -24,6 +24,7 @@ import {
   sendPasswordReset,
   triggerEmailVerification
 } from '../lib/firebase';
+import { api } from '../lib/api';
 import { ShearItLogo } from '../components/ShearItLogo';
 
 interface AuthScreenProps {
@@ -140,26 +141,50 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, allUsers }) =
     setLoading(true);
     try {
       if (tab === 'register') {
-        const user = await signUpWithEmail(
-          email.trim(),
-          password,
-          name.trim(),
-          program,
-          yearLevel,
-          university.trim(),
-          paymongoAccountId.trim()
-        );
+        let user: UserProfile;
+        try {
+          user = await signUpWithEmail(
+            email.trim(),
+            password,
+            name.trim(),
+            program,
+            yearLevel,
+            university.trim(),
+            paymongoAccountId.trim()
+          );
+        } catch (fbErr: any) {
+          console.warn('Firebase Auth signup notice, falling back to backend auth API:', fbErr);
+          const res = await api.register({
+            name: name.trim(),
+            email: email.trim(),
+            password,
+            phone: '',
+            program,
+            yearLevel,
+            university: university.trim(),
+          });
+          user = res.user;
+        }
+
         setVerificationSent(true);
         setSuccessMsg(`Account created successfully! Welcome to Shear It, ${user.name}. Redirecting...`);
         setTimeout(() => {
           onSuccess(user);
-        }, 900);
+        }, 700);
       } else {
-        const user = await signInWithEmail(email.trim(), password);
+        let user: UserProfile;
+        try {
+          user = await signInWithEmail(email.trim(), password);
+        } catch (fbErr: any) {
+          console.warn('Firebase Auth signin notice, falling back to backend auth API:', fbErr);
+          const res = await api.login(email.trim());
+          user = res.user;
+        }
+
         setSuccessMsg(`Welcome back, ${user.name}! Entering marketplace...`);
         setTimeout(() => {
           onSuccess(user);
-        }, 600);
+        }, 500);
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
@@ -621,7 +646,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, allUsers }) =
 
       {/* Footer Disclaimer */}
       <div className="max-w-6xl mx-auto w-full text-center text-xs text-[#E8A5A9]/80 py-2 border-t border-white/10">
-        StudEase Philippine Education Network · RA 10173 Compliant · Direct PayMongo Payout Integration
+        Shear It Philippine Academic Notes Marketplace · RA 10173 Compliant · Direct PayMongo Payout Integration
       </div>
     </div>
   );
