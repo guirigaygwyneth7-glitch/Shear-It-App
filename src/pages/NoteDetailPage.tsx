@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { NoteListing, UserProfile } from '../types';
 import { formatPhp } from '../lib/api';
+import { getNotePreviewPages, resolvePreviewUrl, generateEngineeringDiagramSvg } from '../lib/assets';
 
 interface NoteDetailPageProps {
   note: NoteListing;
@@ -52,6 +53,8 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({
   onSelectRelated,
 }) => {
   const [copiedLink, setCopiedLink] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
 
   const currentUid = currentUser.uid || currentUser.id;
   const isFree = (note.price === 0 || note.pricePhp === 0);
@@ -64,6 +67,11 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
+
+  const previewList = getNotePreviewPages(note);
+  const currentPreviewSrc = failedImages[selectedImageIndex]
+    ? generateEngineeringDiagramSvg(note.title, note.courseCode, selectedImageIndex + 1, note.pageCount || 24)
+    : (previewList[selectedImageIndex] || previewList[0]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -99,20 +107,69 @@ export const NoteDetailPage: React.FC<NoteDetailPageProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column (Document Preview Gallery): 7 cols */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white rounded-2xl border border-[#F8EDEF] overflow-hidden shadow-xs relative">
-            <div className="relative aspect-[4/3] bg-[#570018] flex items-center justify-center overflow-hidden">
+          <div className="bg-white rounded-2xl border border-[#F8EDEF] overflow-hidden shadow-xs relative group">
+            {/* Clickable High-Resolution Preview Viewport */}
+            <div
+              onClick={onOpenViewer}
+              className="relative aspect-[4/3] bg-gradient-to-br from-[#2D000B] via-[#4A0012] to-[#1F0008] flex items-center justify-center overflow-hidden cursor-pointer"
+              title="Click to open full document inspection viewer"
+            >
               <img
-                src={note.previewImages?.[0] || '/src/assets/images/note_preview_structures_1792130896313.jpg'}
+                src={activeImage}
                 alt={note.title}
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-102"
               />
-              <div className="absolute top-3 left-3 bg-[#570018]/90 backdrop-blur-xs text-[#FAF6F0] px-2.5 py-1 rounded-md text-[11px] font-mono">
-                Sample Preview · Page 1 of {note.pageCount}
+
+              {/* Badges */}
+              <div className="absolute top-3 left-3 bg-[#570018]/90 backdrop-blur-xs text-[#FAF6F0] px-2.5 py-1 rounded-md text-[11px] font-mono shadow-xs">
+                Sample Preview · Page {selectedImageIndex + 1} of {note.pageCount || 28}
               </div>
-              <div className="absolute top-3 right-3 bg-[#800000] text-white px-2.5 py-1 rounded-md text-[11px] font-bold">
+              <div className="absolute top-3 right-3 bg-[#800000] text-white px-2.5 py-1 rounded-md text-[11px] font-bold shadow-xs">
                 {note.materialType}
               </div>
+
+              {/* Hover / Click to Inspect Overlay */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 text-white">
+                <div className="w-12 h-12 rounded-full bg-[#800000]/90 backdrop-blur-md flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                  <Eye className="w-6 h-6 text-amber-300" />
+                </div>
+                <span className="bg-black/70 px-4 py-1.5 rounded-xl text-xs font-bold font-mono tracking-wide shadow-md">
+                  Click to Inspect Full Document ({note.pageCount || 28} Pages)
+                </span>
+              </div>
+            </div>
+
+            {/* Thumbnail Strip & Quick Actions */}
+            <div className="p-3 bg-[#FAF9F9] border-t border-[#F8EDEF] flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+                <span className="text-[10px] font-mono text-[#746B70] uppercase font-bold shrink-0">
+                  Sample Pages:
+                </span>
+                {previewList.map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                      selectedImageIndex === idx
+                        ? 'border-[#800000] ring-2 ring-[#800000]/30 shadow-xs'
+                        : 'border-slate-200 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={img} alt={`Preview page ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={onOpenViewer}
+                className="px-3.5 py-1.5 bg-white border border-[#800000] text-[#800000] hover:bg-[#800000] hover:text-white rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer ml-auto shrink-0"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Open Document Viewer</span>
+              </button>
             </div>
 
             {hasAccess && (
